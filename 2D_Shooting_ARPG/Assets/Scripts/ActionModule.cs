@@ -13,6 +13,7 @@ public class ActionModule : MonoBehaviour
     public Vector2 valueDirection = Vector2.zero;
 
     /// <summary> 接地判定に利用するBoxColliderv </summary>
+    [SerializeField]
     private BoxCollider2D bc;
 
     /// <summary> 地形のレイヤーマスク </summary>
@@ -22,19 +23,15 @@ public class ActionModule : MonoBehaviour
     /// <summary> 接地しているかどうかを取得する </summary>
     public bool isGround = false;
 
+    /// <summary> 連続ジャンプを防止するためのフラグ </summary>
+    private bool isJumpInt = false;
+
+
     // Start is called before the first frame update
     void Start()
     {
-        rig = GetComponent<Rigidbody2D>();
-        if (rig == null)
-        {
-            rig = gameObject.AddComponent<Rigidbody2D>();
-            rig.gravityScale = 0.98f;
-            rig.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-        }
-
-        bc = GetComponent<BoxCollider2D>();
+        rig = GetComponentInChildren<Rigidbody2D>();
+        bc = GetComponentInChildren<BoxCollider2D>();
     }
 
     private void FixedUpdate()
@@ -42,20 +39,43 @@ public class ActionModule : MonoBehaviour
         Move();
         Check_Ground();
 
+        /*
         if (Input.GetKeyDown(KeyCode.Space))
         {
             rig.velocity += Vector2.up * 40;
         }
+        */
         
     }
 
+    public void Jump()
+    {
+        if (isGround && !isJumpInt)
+        {
+            Debug.Log("JUMP");
+            rig.velocity += Vector2.up * 40;
+            StartCoroutine(C_JumpInterval());
+        }
+        
+
+    }
+
+    //ジャンプのインターバル
+    private IEnumerator C_JumpInterval()
+    {
+        isJumpInt = true;
+        yield return new WaitForSeconds(0.1f);
+        isJumpInt = false;
+    }
+
+
     private void Move()
     {
-        valueMove = new Vector2( Input.GetAxis("Horizontal"), 0);
+        //valueMove = new Vector2( Input.GetAxis("Horizontal"), 0);
         float speed = 40;
 
         //rig.velocity = new Vector2( 20 * valueMove.x - rig.velocity.x, rig.velocity.y);
-        rig.AddForce(60 * Vector2.right * (valueMove.x * speed - rig.velocity.x));
+        rig.AddForce(10 * Vector2.right * (valueMove.x * speed - rig.velocity.x));
 
 
     }
@@ -73,7 +93,7 @@ public class ActionModule : MonoBehaviour
 
         RaycastHit2D raycastHit2 = Physics2D.BoxCast(
             origin: origin,
-            size: bc.size,
+            size: bc.size * 10,
             angle: 0,
             direction: Vector2.down,
             distance: floatingDistance + epsilon,
